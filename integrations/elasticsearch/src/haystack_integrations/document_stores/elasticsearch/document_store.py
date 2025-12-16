@@ -489,7 +489,7 @@ class ElasticsearchDocumentStore:
         return documents_written
 
     async def write_documents_async(
-        self, documents: list[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE , refresh: RefreshPolicy= RefreshPolicy.WAIT_FOR
+        self, documents: list[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE , refresh: RefreshPolicy= RefreshPolicy.TRUE
     ) -> int:
         """
         Asynchronously writes `Document`s to Elasticsearch.
