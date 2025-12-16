@@ -21,6 +21,7 @@ from haystack.version import __version__ as haystack_version
 
 from elasticsearch import AsyncElasticsearch, Elasticsearch, helpers
 
+from .enums import RefreshPolicy
 from .filters import _normalize_filters
 
 logger = logging.getLogger(__name__)
@@ -410,7 +411,7 @@ class ElasticsearchDocumentStore:
 
         return Document.from_dict(data)
 
-    def write_documents(self, documents: list[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE) -> int:
+    def write_documents(self, documents: list[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE, refresh: RefreshPolicy = RefreshPolicy.WAIT_FOR) -> int:
         """
         Writes `Document`s to Elasticsearch.
 
@@ -456,7 +457,7 @@ class ElasticsearchDocumentStore:
         documents_written, errors = helpers.bulk(
             client=self.client,
             actions=elasticsearch_actions,
-            refresh="wait_for",
+            refresh=refresh.value,
             index=self._index,
             raise_on_error=False,
             stats_only=False,
@@ -488,7 +489,7 @@ class ElasticsearchDocumentStore:
         return documents_written
 
     async def write_documents_async(
-        self, documents: list[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE
+        self, documents: list[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE , refresh: RefreshPolicy= RefreshPolicy.WAIT_FOR
     ) -> int:
         """
         Asynchronously writes `Document`s to Elasticsearch.
@@ -537,7 +538,7 @@ class ElasticsearchDocumentStore:
                 client=self.async_client,
                 actions=actions,
                 index=self._index,
-                refresh=True,
+                refresh=refresh.value,
                 raise_on_error=False,
                 stats_only=False,
             )
@@ -556,7 +557,7 @@ class ElasticsearchDocumentStore:
             msg = f"Failed to write documents to Elasticsearch: {e!s}"
             raise DocumentStoreError(msg) from e
 
-    def delete_documents(self, document_ids: list[str]) -> None:
+    def delete_documents(self, document_ids: list[str], refresh: RefreshPolicy= RefreshPolicy.WAIT_FOR) -> None:
         """
         Deletes all documents with a matching document_ids from the document store.
 
@@ -565,17 +566,17 @@ class ElasticsearchDocumentStore:
         helpers.bulk(
             client=self.client,
             actions=({"_op_type": "delete", "_id": id_} for id_ in document_ids),
-            refresh="wait_for",
+            refresh=refresh.value,
             index=self._index,
             raise_on_error=False,
         )
 
-    def _prepare_delete_all_request(self, *, is_async: bool) -> dict[str, Any]:
+    def _prepare_delete_all_request(self, *, refresh: RefreshPolicy , is_async: bool) -> dict[str, Any]:
         return {
             "index": self._index,
             "body": {"query": {"match_all": {}}},  # Delete all documents
             "wait_for_completion": False if is_async else True,  # block until done (set False for async)
-            "refresh": True,  # Ensure changes are visible immediately
+            "refresh": refresh.value,  # Ensure changes are visible immediately
         }
 
     async def delete_documents_async(self, document_ids: list[str]) -> None:
@@ -597,7 +598,7 @@ class ElasticsearchDocumentStore:
             msg = f"Failed to delete documents from Elasticsearch: {e!s}"
             raise DocumentStoreError(msg) from e
 
-    def delete_all_documents(self, recreate_index: bool = False) -> None:
+    def delete_all_documents(self, recreate_index: bool = False, refresh: RefreshPolicy = RefreshPolicy.TRUE) -> None:
         """
         Deletes all documents in the document store.
 
@@ -630,14 +631,14 @@ class ElasticsearchDocumentStore:
             self._client.indices.create(index=self._index, mappings=mappings)  # type: ignore
 
         else:
-            result = self._client.delete_by_query(**self._prepare_delete_all_request(is_async=False))  # type: ignore
+            result = self._client.delete_by_query(**self._prepare_delete_all_request(refresh, is_async=False))  # type: ignore
             logger.info(
                 "Deleted all the {n_docs} documents from the index '{index}'.",
                 index=self._index,
                 n_docs=result["deleted"],
             )
 
-    async def delete_all_documents_async(self, recreate_index: bool = False) -> None:
+    async def delete_all_documents_async(self, recreate_index: bool = False, refresh: RefreshPolicy= RefreshPolicy.TRUE) -> None:
         """
         Asynchronously deletes all documents in the document store.
 
@@ -670,7 +671,7 @@ class ElasticsearchDocumentStore:
             else:
                 # use delete_by_query for more efficient deletion without index recreation
                 # For async, we need to wait for completion to get the deleted count
-                delete_request = self._prepare_delete_all_request(is_async=True)
+                delete_request = self._prepare_delete_all_request(refresh, is_async=True)
                 delete_request["wait_for_completion"] = True  # Override to wait for completion in async
                 result = await self._async_client.delete_by_query(**delete_request)  # type: ignore
                 logger.info(
