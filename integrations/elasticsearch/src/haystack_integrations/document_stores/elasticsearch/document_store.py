@@ -684,7 +684,8 @@ class ElasticsearchDocumentStore:
             msg = f"Failed to delete all documents from Elasticsearch: {e!s}"
             raise DocumentStoreError(msg) from e
 
-    def delete_by_filter(self, filters: dict[str, Any]) -> int:
+# TODO CHECK IF THIS ALSO NEEDS REFRESH PARAM TO BE ADDED
+    def delete_by_filter(self, filters: dict[str, Any], refresh: bool = False) -> int:
         """
         Deletes all documents that match the provided filters.
 
@@ -697,7 +698,7 @@ class ElasticsearchDocumentStore:
         try:
             normalized_filters = _normalize_filters(filters)
             body = {"query": {"bool": {"filter": normalized_filters}}}
-            result = self.client.delete_by_query(index=self._index, body=body)  # type: ignore
+            result = self.client.delete_by_query(index=self._index, body=body, refresh= refresh)  # type: ignore
             deleted_count = result.get("deleted", 0)
             logger.info(
                 "Deleted {n_docs} documents from index '{index}' using filters.",
@@ -734,7 +735,7 @@ class ElasticsearchDocumentStore:
             msg = f"Failed to delete documents by filter from Elasticsearch: {e!s}"
             raise DocumentStoreError(msg) from e
 
-    def update_by_filter(self, filters: dict[str, Any], meta: dict[str, Any]) -> int:
+    def update_by_filter(self, filters: dict[str, Any], meta: dict[str, Any], refresh: bool= RefreshPolicy.FALSE) -> int:
         """
         Updates the metadata of all documents that match the provided filters.
 
@@ -754,7 +755,7 @@ class ElasticsearchDocumentStore:
                 "script": {"source": UPDATE_SCRIPT, "params": meta, "lang": "painless"},
             }
 
-            result = self.client.update_by_query(index=self._index, body=body)  # type: ignore
+            result = self.client.update_by_query(index=self._index, body=body, refresh=refresh)  # type: ignore
             updated_count = result.get("updated", 0)
             logger.info(
                 "Updated {n_docs} documents in index '{index}' using filters.",
