@@ -579,7 +579,7 @@ class ElasticsearchDocumentStore:
             "refresh": refresh.value,  # Ensure changes are visible immediately
         }
 
-    async def delete_documents_async(self, document_ids: list[str]) -> None:
+    async def delete_documents_async(self, document_ids: list[str], refresh: RefreshPolicy = RefreshPolicy.TRUE) -> None:
         """
         Asynchronously deletes all documents with a matching document_ids from the document store.
 
@@ -592,7 +592,7 @@ class ElasticsearchDocumentStore:
                 client=self.async_client,
                 actions=({"_op_type": "delete", "_id": id_} for id_ in document_ids),
                 index=self._index,
-                refresh=True,
+                refresh=refresh.value,
             )
         except Exception as e:
             msg = f"Failed to delete documents from Elasticsearch: {e!s}"
