@@ -417,6 +417,10 @@ class ElasticsearchDocumentStore:
 
         :param documents: List of Documents to write to the document store.
         :param policy: DuplicatePolicy to apply when a document with the same ID already exists in the document store.
+        :param refresh: Controls elasticsearch refreshes type
+            - `RefreshPolicy.TRUE`: Force refresh immediately after the operation.
+            - `RefreshPolicy.FALSE`: Do not refresh
+            - `"RefreshPolicy.WAIT_FOR"`: Wait for the next refresh cycle.
         :raises ValueError: If `documents` is not a list of `Document`s.
         :raises DuplicateDocumentError: If a document with the same ID already exists in the document store and
             `policy` is set to `DuplicatePolicy.FAIL` or `DuplicatePolicy.NONE`.
@@ -496,6 +500,10 @@ class ElasticsearchDocumentStore:
 
         :param documents: List of Documents to write to the document store.
         :param policy: DuplicatePolicy to apply when a document with the same ID already exists in the document store.
+        :param refresh: Controls elasticsearch refreshes type
+            - `RefreshPolicy.TRUE`: Force refresh immediately after the operation.
+            - `RefreshPolicy.FALSE`: Do not refresh
+            - `"RefreshPolicy.WAIT_FOR"`: Wait for the next refresh cycle.
         :raises ValueError: If `documents` is not a list of `Document`s.
         :raises DuplicateDocumentError: If a document with the same ID already exists in the document store and
             `policy` is set to `DuplicatePolicy.FAIL` or `DuplicatePolicy.NONE`.
@@ -562,6 +570,10 @@ class ElasticsearchDocumentStore:
         Deletes all documents with a matching document_ids from the document store.
 
         :param document_ids: the document ids to delete
+        :param refresh: Controls elasticsearch refreshes type
+            - `RefreshPolicy.TRUE`: Force refresh immediately after the operation.
+            - `RefreshPolicy.FALSE`: Do not refresh
+            - `"RefreshPolicy.WAIT_FOR"`: Wait for the next refresh cycle.
         """
         helpers.bulk(
             client=self.client,
@@ -584,6 +596,10 @@ class ElasticsearchDocumentStore:
         Asynchronously deletes all documents with a matching document_ids from the document store.
 
         :param document_ids: the document ids to delete
+        :param refresh: Controls elasticsearch refreshes type
+            - `RefreshPolicy.TRUE`: Force refresh immediately after the operation.
+            - `RefreshPolicy.FALSE`: Do not refresh
+            - `"RefreshPolicy.WAIT_FOR"`: Wait for the next refresh cycle.
         """
         self._ensure_initialized()
 
@@ -598,7 +614,7 @@ class ElasticsearchDocumentStore:
             msg = f"Failed to delete documents from Elasticsearch: {e!s}"
             raise DocumentStoreError(msg) from e
 
-    def delete_all_documents(self, recreate_index: bool = False, refresh: RefreshPolicy = RefreshPolicy.TRUE) -> None:
+    def delete_all_documents(self, recreate_index: bool = False, refresh: bool= True) -> None:
         """
         Deletes all documents in the document store.
 
@@ -606,6 +622,9 @@ class ElasticsearchDocumentStore:
 
         :param recreate_index: If True, the index will be deleted and recreated with the original mappings and
             settings. If False, all documents will be deleted using the `delete_by_query` API.
+        :param refresh: Controls elasticsearch refreshes type
+            - `True`: Force refresh immediately after the operation.
+            - `False`: Do not refresh
         """
         self._ensure_initialized()  # _ensure_initialized ensures _client is not None and an index exists
 
@@ -645,6 +664,9 @@ class ElasticsearchDocumentStore:
         A fast way to clear all documents from the document store while preserving any index settings and mappings.
         :param recreate_index: If True, the index will be deleted and recreated with the original mappings and
             settings. If False, all documents will be deleted using the `delete_by_query` API.
+        :param refresh: Controls elasticsearch refreshes type
+            - `True`: Force refresh immediately after the operation.
+            - `False`: Do not refresh
         """
         self._ensure_initialized()  # ensures _async_client is not None
 
@@ -690,6 +712,9 @@ class ElasticsearchDocumentStore:
 
         :param filters: The filters to apply to select documents for deletion.
             For filter syntax, see [Haystack metadata filtering](https://docs.haystack.deepset.ai/docs/metadata-filtering)
+        :param refresh: Controls elasticsearch refreshes type
+            - `True`: Force refresh immediately after the operation.
+            - `False`: Do not refresh
         :returns: The number of documents deleted.
         """
         self._ensure_initialized()
@@ -715,6 +740,9 @@ class ElasticsearchDocumentStore:
 
         :param filters: The filters to apply to select documents for deletion.
             For filter syntax, see [Haystack metadata filtering](https://docs.haystack.deepset.ai/docs/metadata-filtering)
+        :param refresh: Controls elasticsearch refreshes type
+            - `True`: Force refresh immediately after the operation.
+            - `False`: Do not refresh
         :returns: The number of documents deleted.
         """
         self._ensure_initialized()
