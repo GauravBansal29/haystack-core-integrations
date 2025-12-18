@@ -571,12 +571,12 @@ class ElasticsearchDocumentStore:
             raise_on_error=False,
         )
 
-    def _prepare_delete_all_request(self, *, refresh: RefreshPolicy , is_async: bool) -> dict[str, Any]:
+    def _prepare_delete_all_request(self, *, is_async: bool, refresh: bool) -> dict[str, Any]:
         return {
             "index": self._index,
             "body": {"query": {"match_all": {}}},  # Delete all documents
             "wait_for_completion": False if is_async else True,  # block until done (set False for async)
-            "refresh": refresh.value,  # Ensure changes are visible immediately
+            "refresh": refresh,  # Ensure changes are visible immediately
         }
 
     async def delete_documents_async(self, document_ids: list[str], refresh: RefreshPolicy = RefreshPolicy.TRUE) -> None:
@@ -631,14 +631,14 @@ class ElasticsearchDocumentStore:
             self._client.indices.create(index=self._index, mappings=mappings)  # type: ignore
 
         else:
-            result = self._client.delete_by_query(**self._prepare_delete_all_request(refresh, is_async=False))  # type: ignore
+            result = self._client.delete_by_query(**self._prepare_delete_all_request(is_async=False, refresh=refresh))  # type: ignore
             logger.info(
                 "Deleted all the {n_docs} documents from the index '{index}'.",
                 index=self._index,
                 n_docs=result["deleted"],
             )
 
-    async def delete_all_documents_async(self, recreate_index: bool = False, refresh: RefreshPolicy= RefreshPolicy.TRUE) -> None:
+    async def delete_all_documents_async(self, recreate_index: bool = False, refresh: bool=True) -> None:
         """
         Asynchronously deletes all documents in the document store.
 
@@ -671,7 +671,7 @@ class ElasticsearchDocumentStore:
             else:
                 # use delete_by_query for more efficient deletion without index recreation
                 # For async, we need to wait for completion to get the deleted count
-                delete_request = self._prepare_delete_all_request(refresh, is_async=True)
+                delete_request = self._prepare_delete_all_request(is_async=True, refresh=refresh)
                 delete_request["wait_for_completion"] = True  # Override to wait for completion in async
                 result = await self._async_client.delete_by_query(**delete_request)  # type: ignore
                 logger.info(
@@ -684,7 +684,6 @@ class ElasticsearchDocumentStore:
             msg = f"Failed to delete all documents from Elasticsearch: {e!s}"
             raise DocumentStoreError(msg) from e
 
-# TODO CHECK IF THIS ALSO NEEDS REFRESH PARAM TO BE ADDED
     def delete_by_filter(self, filters: dict[str, Any], refresh: bool = False) -> int:
         """
         Deletes all documents that match the provided filters.
@@ -710,7 +709,7 @@ class ElasticsearchDocumentStore:
             msg = f"Failed to delete documents by filter from Elasticsearch: {e!s}"
             raise DocumentStoreError(msg) from e
 
-    async def delete_by_filter_async(self, filters: dict[str, Any]) -> int:
+    async def delete_by_filter_async(self, filters: dict[str, Any], refresh: bool= False) -> int:
         """
         Asynchronously deletes all documents that match the provided filters.
 
@@ -723,7 +722,7 @@ class ElasticsearchDocumentStore:
         try:
             normalized_filters = _normalize_filters(filters)
             body = {"query": {"bool": {"filter": normalized_filters}}}
-            result = await self.async_client.delete_by_query(index=self._index, body=body)  # type: ignore
+            result = await self.async_client.delete_by_query(index=self._index, body=body, refresh=refresh)  # type: ignore
             deleted_count = result.get("deleted", 0)
             logger.info(
                 "Deleted {n_docs} documents from index '{index}' using filters.",
@@ -735,7 +734,7 @@ class ElasticsearchDocumentStore:
             msg = f"Failed to delete documents by filter from Elasticsearch: {e!s}"
             raise DocumentStoreError(msg) from e
 
-    def update_by_filter(self, filters: dict[str, Any], meta: dict[str, Any], refresh: bool= RefreshPolicy.FALSE) -> int:
+    def update_by_filter(self, filters: dict[str, Any], meta: dict[str, Any], refresh: bool = False) -> int:
         """
         Updates the metadata of all documents that match the provided filters.
 
@@ -767,7 +766,7 @@ class ElasticsearchDocumentStore:
             msg = f"Failed to update documents by filter in Elasticsearch: {e!s}"
             raise DocumentStoreError(msg) from e
 
-    async def update_by_filter_async(self, filters: dict[str, Any], meta: dict[str, Any]) -> int:
+    async def update_by_filter_async(self, filters: dict[str, Any], meta: dict[str, Any], refresh:bool = False) -> int:
         """
         Asynchronously updates the metadata of all documents that match the provided filters.
 
@@ -787,7 +786,7 @@ class ElasticsearchDocumentStore:
                 "script": {"source": UPDATE_SCRIPT, "params": meta, "lang": "painless"},
             }
 
-            result = await self.async_client.update_by_query(index=self._index, body=body)  # type: ignore
+            result = await self.async_client.update_by_query(index=self._index, body=body, refresh=refresh)  # type: ignore
             updated_count = result.get("updated", 0)
             logger.info(
                 "Updated {n_docs} documents in index '{index}' using filters.",
