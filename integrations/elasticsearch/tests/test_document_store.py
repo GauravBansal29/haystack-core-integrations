@@ -525,7 +525,7 @@ class TestDocumentStore(DocumentStoreBaseTests):
         assert document_store.count_documents() == 2
 
         document_store.delete_all_documents(recreate_index=False, refresh=True)
-        #TODO: check refresh is already true here shouldn't be required
+        # TODO: check refresh is already true here shouldn't be required
         assert document_store.count_documents() == 0
 
         new_doc = Document(id="3", content="New document after delete all")
@@ -547,8 +547,8 @@ class TestDocumentStore(DocumentStoreBaseTests):
 
         # Delete documents with category="A"
         deleted_count = document_store.delete_by_filter(
-            filters={"field": "category", "operator": "==", "value": "A"},
-            refresh=True)
+            filters={"field": "category", "operator": "==", "value": "A"}, refresh=True
+        )
         assert deleted_count == 2
         assert document_store.count_documents() == 1
 
@@ -845,7 +845,7 @@ class TestElasticsearchDocumentStoreAsync:
 
         # Update status for category="A" documents
         updated_count = await document_store.update_by_filter_async(
-            filters={"field": "category", "operator": "==", "value": "A"}, meta={"status": "published"} , refresh=True
+            filters={"field": "category", "operator": "==", "value": "A"}, meta={"status": "published"}, refresh=True
         )
         assert updated_count == 2
 
