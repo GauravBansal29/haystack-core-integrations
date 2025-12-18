@@ -14,7 +14,7 @@ from haystack.document_stores.types import DuplicatePolicy
 from haystack.testing.document_store import DocumentStoreBaseTests
 from haystack.utils import Secret
 from haystack.utils.auth import TokenSecret
-from integrations.elasticsearch.src.haystack_integrations.document_stores.elasticsearch.enums import RefreshPolicy
+from haystack_integrations.document_stores.elasticsearch.enums import RefreshPolicy
 
 from haystack_integrations.document_stores.elasticsearch import ElasticsearchDocumentStore
 
@@ -525,7 +525,6 @@ class TestDocumentStore(DocumentStoreBaseTests):
         assert document_store.count_documents() == 2
 
         document_store.delete_all_documents(recreate_index=False, refresh=True)
-        # TODO: check refresh is already true here shouldn't be required
         assert document_store.count_documents() == 0
 
         new_doc = Document(id="3", content="New document after delete all")
