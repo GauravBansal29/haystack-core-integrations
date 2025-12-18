@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import random
-import time
 from unittest.mock import Mock, patch
 
 import pytest
@@ -16,10 +14,9 @@ from haystack.document_stores.types import DuplicatePolicy
 from haystack.testing.document_store import DocumentStoreBaseTests
 from haystack.utils import Secret
 from haystack.utils.auth import TokenSecret
+from integrations.elasticsearch.src.haystack_integrations.document_stores.elasticsearch.enums import RefreshPolicy
 
 from haystack_integrations.document_stores.elasticsearch import ElasticsearchDocumentStore
-
-from integrations.elasticsearch.src.haystack_integrations.document_stores.elasticsearch.enums import RefreshPolicy
 
 
 @patch("haystack_integrations.document_stores.elasticsearch.document_store.Elasticsearch")
@@ -498,7 +495,7 @@ class TestDocumentStore(DocumentStoreBaseTests):
         settings_before = index_info_before[document_store._index]["settings"]
 
         # delete all documents
-        document_store.delete_all_documents(recreate_index=True)
+        document_store.delete_all_documents(recreate_index=True, refresh=True)
         assert document_store.count_documents() == 0
 
         # verify index structure is preserved
@@ -527,7 +524,7 @@ class TestDocumentStore(DocumentStoreBaseTests):
         document_store.write_documents(docs)
         assert document_store.count_documents() == 2
 
-        document_store.delete_all_documents(recreate_index=False, refresh=RefreshPolicy.TRUE)
+        document_store.delete_all_documents(recreate_index=False, refresh=True)
         #TODO: check refresh is already true here shouldn't be required
         assert document_store.count_documents() == 0
 
@@ -549,7 +546,9 @@ class TestDocumentStore(DocumentStoreBaseTests):
         assert document_store.count_documents() == 3
 
         # Delete documents with category="A"
-        deleted_count = document_store.delete_by_filter(filters={"field": "category", "operator": "==", "value": "A"}, refresh=True)
+        deleted_count = document_store.delete_by_filter(
+            filters={"field": "category", "operator": "==", "value": "A"},
+            refresh=True)
         assert deleted_count == 2
         assert document_store.count_documents() == 1
 

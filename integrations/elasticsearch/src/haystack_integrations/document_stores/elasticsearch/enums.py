@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class RefreshPolicy(Enum):
     """
     Enum to define the allowed values for the 'refresh' parameter

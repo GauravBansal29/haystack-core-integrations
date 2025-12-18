@@ -411,7 +411,10 @@ class ElasticsearchDocumentStore:
 
         return Document.from_dict(data)
 
-    def write_documents(self, documents: list[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE, refresh: RefreshPolicy = RefreshPolicy.WAIT_FOR) -> int:
+    def write_documents(self,
+                        documents: list[Document],
+                        policy: DuplicatePolicy = DuplicatePolicy.NONE,
+                        refresh: RefreshPolicy = RefreshPolicy.WAIT_FOR) -> int:
         """
         Writes `Document`s to Elasticsearch.
 
@@ -493,7 +496,10 @@ class ElasticsearchDocumentStore:
         return documents_written
 
     async def write_documents_async(
-        self, documents: list[Document], policy: DuplicatePolicy = DuplicatePolicy.NONE , refresh: RefreshPolicy= RefreshPolicy.TRUE
+        self,
+        documents: list[Document],
+        policy: DuplicatePolicy = DuplicatePolicy.NONE ,
+        refresh: RefreshPolicy= RefreshPolicy.TRUE
     ) -> int:
         """
         Asynchronously writes `Document`s to Elasticsearch.
@@ -583,7 +589,10 @@ class ElasticsearchDocumentStore:
             raise_on_error=False,
         )
 
-    def _prepare_delete_all_request(self, *, is_async: bool, refresh: bool) -> dict[str, Any]:
+    def _prepare_delete_all_request(self,
+                                    *,
+                                    is_async: bool,
+                                    refresh: bool) -> dict[str, Any]:
         return {
             "index": self._index,
             "body": {"query": {"match_all": {}}},  # Delete all documents
